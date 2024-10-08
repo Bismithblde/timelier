@@ -2,7 +2,7 @@ import '@src/Popup.css';
 import { useStorage, withErrorBoundary, withSuspense } from '@extension/shared';
 import { exampleThemeStorage } from '@extension/storage';
 import type { ComponentPropsWithoutRef } from 'react';
-
+import Text from '../../components/Text';
 const notificationOptions = {
   type: 'basic',
   iconUrl: chrome.runtime.getURL('icon-34.png'),
@@ -55,6 +55,7 @@ const Popup = () => {
           Click to inject Content Script
         </button>
         <ToggleButton>Toggle theme</ToggleButton>
+        <Text />
       </header>
     </div>
   );
