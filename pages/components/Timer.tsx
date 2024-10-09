@@ -1,10 +1,12 @@
 import { Box, Typography, Button } from '@mui/material';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useStopwatch } from '../contexts/stopwatchContext';
 
 interface StopwatchType {
-  name?: string;
-  link?: string;
-  time?: string;
+  name: string;
+  link: string;
+  time: number;
+  lastCurrentTime: number;
 }
 
 interface TimerProps {
@@ -13,6 +15,45 @@ interface TimerProps {
 
 const Timer: React.FC<TimerProps> = ({ stopwatch }) => {
   const [tabInfo, setTabInfo] = useState({ name: '', url: '' });
+  const { stopwatches } = useStopwatch();
+  const [localTime, setLocalTime] = useState(stopwatch.time);
+
+  useEffect(() => {
+    const updatedStopwatch = stopwatches.find(sw => sw.link === stopwatch.link);
+    if (updatedStopwatch) {
+      setLocalTime(updatedStopwatch.time);
+    }
+  }, [stopwatches, stopwatch.link]);
+
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      setLocalTime(prevTime => {
+        const newTime = prevTime + 1;
+        updateStopwatchTime(newTime);
+        return newTime;
+      });
+    }, 1000);
+
+    return () => clearInterval(intervalId);
+  }, []);
+
+  const updateStopwatchTime = (newTime: number) => {
+    const currentTimeInSeconds = Math.floor(Date.now() / 1000);
+
+    chrome.storage.local.get('stopwatches', result => {
+      const stopwatches = result.stopwatches || [];
+      const updatedStopwatches = stopwatches.map((element: StopwatchType) => {
+        if (element.link === stopwatch.link) {
+          return { ...element, time: newTime, lastCurrentTime: currentTimeInSeconds };
+        }
+        return element;
+      });
+
+      chrome.storage.local.set({ stopwatches: updatedStopwatches }, () => {
+        console.log('Stopwatches updated successfully.');
+      });
+    });
+  };
 
   const handleClick = () => {
     // Uncomment and implement the logic here
@@ -50,7 +91,8 @@ const Timer: React.FC<TimerProps> = ({ stopwatch }) => {
           }}>
           <Typography variant="h5">{stopwatch.name}</Typography>
           <Typography variant="h5" sx={{ mt: 1 }}>
-            {stopwatch.time}
+            {String(Math.floor(localTime / 3600)).padStart(2, '0')}:
+            {String(Math.floor((localTime % 3600) / 60)).padStart(2, '0')}:{String(localTime % 60).padStart(2, '0')}{' '}
           </Typography>
           <Button variant="contained" color="primary" onClick={handleClick}>
             Add

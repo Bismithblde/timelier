@@ -5,7 +5,8 @@ import { useStopwatch } from '../../contexts/stopwatchContext';
 interface Stopwatch {
   name: string;
   link: string;
-  time: string;
+  time: number;
+  lastCurrentTime: number;
 }
 
 export default function Options() {
@@ -17,8 +18,9 @@ export default function Options() {
     e.preventDefault();
     console.log('Added ' + name);
     console.log('Link: ' + link);
+    const currentTimeInSeconds = Math.floor(Date.now() / 1000);
 
-    const newStopwatch: Stopwatch = { name: name, link: link, time: '0:00' };
+    const newStopwatch: Stopwatch = { name: name, link: link, time: 0, lastCurrentTime: currentTimeInSeconds };
 
     chrome.storage.local.get('stopwatches', result => {
       const existingStopwatches: Stopwatch[] = result.stopwatches || [];

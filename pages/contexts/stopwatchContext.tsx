@@ -5,9 +5,10 @@ const REMOVE_STOPWATCH = 'REMOVE_STOPWATCH';
 
 // Define your types
 interface Stopwatch {
-  link: string;
   name: string;
-  time: string;
+  link: string;
+  time: number;
+  lastCurrentTime: number;
 }
 
 interface StopwatchState {
@@ -66,11 +67,15 @@ export const StopwatchProvider: React.FC<{ children: ReactNode }> = ({ children 
     const getStopwatches = async () => {
       const result = await chrome.storage.local.get('stopwatches');
       if (result.stopwatches) {
-        const existingLinks = new Set(state.stopwatches.map(sw => sw.link)); // Track existing links
+        const existingLinks = new Set(state.stopwatches.map(sw => sw.link));
         result.stopwatches.forEach((stopwatch: Stopwatch) => {
           // Only dispatch if it doesn't already exist
           if (!existingLinks.has(stopwatch.link)) {
-            dispatch({ type: ADD_STOPWATCH, payload: stopwatch });
+            const currentTimeInSeconds = Math.floor(Date.now() / 1000);
+
+            const offset = currentTimeInSeconds - stopwatch.lastCurrentTime;
+            const newStopwatch = { ...stopwatch, time: stopwatch.time + offset };
+            dispatch({ type: ADD_STOPWATCH, payload: newStopwatch });
           }
         });
       }
@@ -82,10 +87,11 @@ export const StopwatchProvider: React.FC<{ children: ReactNode }> = ({ children 
     const handleStorageChange = (changes: any, namespace: string) => {
       if (namespace === 'local' && changes.stopwatches) {
         const newStopwatches = changes.stopwatches.newValue || [];
+        const existingLinks = new Set(state.stopwatches.map(sw => sw.link)); // Track existing links
 
         // Add only non-existing stopwatches
         newStopwatches.forEach((sw: Stopwatch) => {
-          if (!state.stopwatches.find(existing => existing.link === sw.link)) {
+          if (!existingLinks.has(sw.link)) {
             dispatch({ type: ADD_STOPWATCH, payload: sw });
           }
         });
@@ -104,7 +110,7 @@ export const StopwatchProvider: React.FC<{ children: ReactNode }> = ({ children 
     return () => {
       chrome.storage.onChanged.removeListener(handleStorageChange);
     };
-  }, []); // Only run once on mount
+  }, [state.stopwatches]); // Added state.stopwatches to dependencies
 
   return (
     <StopwatchContext.Provider
