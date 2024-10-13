@@ -69,27 +69,40 @@ export const StopwatchProvider: React.FC<{ children: ReactNode }> = ({ children 
       if (result.stopwatches) {
         const existingLinks = new Set(state.stopwatches.map(sw => sw.link));
         result.stopwatches.forEach((stopwatch: Stopwatch) => {
-          // Only dispatch if it doesn't already exist
           if (!existingLinks.has(stopwatch.link)) {
             const currentTimeInSeconds = Math.floor(Date.now() / 1000);
-
-            const offset = currentTimeInSeconds - stopwatch.lastCurrentTime;
-            const newStopwatch = { ...stopwatch, time: stopwatch.time + offset };
-            dispatch({ type: ADD_STOPWATCH, payload: newStopwatch });
+            // *
+            let isMatch: boolean;
+            chrome.runtime.sendMessage(
+              {
+                action: 'checkUrl',
+                urlPattern: 'www.youtube.com',
+              },
+              response => {
+                isMatch = response;
+                if (isMatch) {
+                  const offset = currentTimeInSeconds - stopwatch.lastCurrentTime;
+                  const newStopwatch = { ...stopwatch, time: stopwatch.time + offset };
+                  dispatch({ type: ADD_STOPWATCH, payload: newStopwatch });
+                } else {
+                  const currentTimeInSeconds = Math.floor(Date.now() / 1000);
+                  const newStopwatch = { ...stopwatch, lastCurrentTime: currentTimeInSeconds };
+                  dispatch({ type: ADD_STOPWATCH, payload: newStopwatch });
+                }
+              },
+            );
           }
         });
       }
     };
 
-    // Fetch the stopwatches on component mount
     getStopwatches();
 
     const handleStorageChange = (changes: any, namespace: string) => {
       if (namespace === 'local' && changes.stopwatches) {
         const newStopwatches = changes.stopwatches.newValue || [];
-        const existingLinks = new Set(state.stopwatches.map(sw => sw.link)); // Track existing links
+        const existingLinks = new Set(state.stopwatches.map(sw => sw.link));
 
-        // Add only non-existing stopwatches
         newStopwatches.forEach((sw: Stopwatch) => {
           if (!existingLinks.has(sw.link)) {
             dispatch({ type: ADD_STOPWATCH, payload: sw });

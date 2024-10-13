@@ -26,12 +26,26 @@ const Timer: React.FC<TimerProps> = ({ stopwatch }) => {
   }, [stopwatches, stopwatch.link]);
 
   useEffect(() => {
+    let isMatch: boolean;
     const intervalId = setInterval(() => {
-      setLocalTime(prevTime => {
-        const newTime = prevTime + 1;
-        updateStopwatchTime(newTime);
-        return newTime;
-      });
+      // *
+      chrome.runtime.sendMessage(
+        {
+          action: 'checkUrl',
+          urlPattern: 'www.youtube.com',
+        },
+        response => {
+          isMatch = response;
+        },
+      );
+
+      if (isMatch) {
+        setLocalTime(prevTime => {
+          const newTime = prevTime + 1;
+          updateStopwatchTime(newTime);
+          return newTime;
+        });
+      }
     }, 1000);
 
     return () => clearInterval(intervalId);
@@ -56,17 +70,15 @@ const Timer: React.FC<TimerProps> = ({ stopwatch }) => {
   };
 
   const handleClick = () => {
-    // Uncomment and implement the logic here
-    /* chrome.runtime.sendMessage({}, response => {
-      if (response && response.tabName) {
-        setTabInfo({
-          name: response.tabName,
-          url: response.tabUrl || '',
-        });
-      } else if (response && response.error) {
-        console.error(response.error);
-      }
-    }); */
+    chrome.runtime.sendMessage(
+      {
+        action: 'checkUrl',
+        urlPattern: 'www.youtube.com',
+      },
+      response => {
+        console.log(response);
+      },
+    );
   };
 
   return (

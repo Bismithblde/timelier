@@ -1,2 +1,12 @@
-// client passes in stopwatches array into body and then sends it to service worker
-// service worker will calculate the amount of time away since opening the popup
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  chrome.tabs.query({ active: true }, tabs => {
+    const currentTabUrl: string | undefined = tabs[0].url;
+    if (currentTabUrl && currentTabUrl.includes(message.urlPattern)) {
+      sendResponse(true);
+    } else {
+      sendResponse(false);
+    }
+  });
+
+  return true;
+});
